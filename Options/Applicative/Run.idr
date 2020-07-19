@@ -8,12 +8,15 @@ import Options.Applicative.Types
 import Options.Applicative.Maybe
 import Control.Monad.State
 import Control.Monad.Trans
+import Data.List
+import Data.Either
 
-%access public export
 
+public export
 data OptWord : Type where
   ParsedWord :  OptName -> Maybe String -> OptWord
 
+public export
 parseWord : String -> Maybe OptWord
 parseWord s = case unpack s of
   ('-' :: '-' :: w) => Just $ case span (/= '=') w of
@@ -23,7 +26,8 @@ parseWord s = case unpack s of
   ('-' :: w :: rs)  => Just $ ParsedWord (ShortName w) $ Just (pack rs)
   _                 => Nothing
 
-searchParser : {a : Type} -> Parser a -> ({g : ParamType} -> {r : Type} -> Option g r -> MaybeT (StateT (List String) (Either ParseError)) (Parser r)) -> MaybeT (StateT (List String) (Either ParseError)) (Parser a)
+public export
+searchParser : Parser a -> (forall r. forall g. Option g r -> MaybeT (StateT (List String) (Either ParseError)) (Parser r)) -> MaybeT (StateT (List String) (Either ParseError)) (Parser a)
 searchParser (NilP x) _ = empty
 searchParser (OptP o) f = f o
 searchParser (AppP p1 p2) f = (<|>)
@@ -33,6 +37,7 @@ searchParser (AltP p1 p2) f = (<|>)
   ( searchParser p1 f )
   ( searchParser p2 f )
 
+public export
 stepParser : {a : Type} -> Parser a -> String -> MaybeT (StateT (List String) (Either ParseError)) (Parser a)
 stepParser p arg = case (parseWord arg) of
   Nothing => searchParser p $ \opt => case opt of
@@ -61,20 +66,24 @@ stepParser p arg = case (parseWord arg) of
       False => empty
     _ => empty
 
+public export
 evalParser : Parser a -> Maybe a
 evalParser (NilP r) = r
 evalParser (OptP _) = Nothing
 evalParser (AppP p1 p2) = evalParser p1 <*> evalParser p2
 evalParser (AltP p1 p2) = evalParser p1 <|> evalParser p2
 
+public export
 parseError : String -> ParseError
 parseError arg = ErrorMsg msg
   where
+    msg : String
     msg = case unpack arg of
       ('-'::_) => "Invalid option `" ++ arg ++ "'"
       _        => "Invalid argument `" ++ arg ++ "'"
 
-runParser : Parser a -> List String -> Either ParseError (a, List String)
+public export
+runParser : {a : Type} -> Parser a -> List String -> Either ParseError (a, List String)
 runParser p Nil = maybeToEither (ErrorMsg "Not enough input") $ map (\p' => (p', Nil)) (evalParser p)
 runParser p args@(arg :: argt) = do
   x <- runStateT (runMaybeT $ stepParser p arg) argt
@@ -82,9 +91,10 @@ runParser p args@(arg :: argt) = do
     (Just p', args') => runParser p' args'
     _                => maybeToEither (parseError arg) $ map (\x' => (x', args)) (evalParser p)
 
-runParserFully : Parser a -> List String -> Either ParseError a
-runParserFully p Nil = do
-  (res,leftOver) <- runParser p Nil
+public export
+runParserFully : {a : Type} -> Parser a -> List String -> Either ParseError a
+runParserFully p args = do
+  (res,leftOver) <- runParser p args
   case leftOver of
     (un :: _) => Left $ parseError un
     Nil       => Right res
