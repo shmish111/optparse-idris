@@ -12,6 +12,4 @@ import public Options.Applicative.Types
 import public Options.Applicative.Usage
 import public Control.Lens
 
-%access public export
-
 -- --------------------------------------------------------------------- [ EOF ]

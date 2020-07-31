@@ -9,5 +9,6 @@ modules = Options.Applicative
         , Options.Applicative.Types
         , Options.Applicative.Usage
 
-pkgs = lens
-     , wlpprint
+depends = lens
+        , wl-pprint
+        , bifunctors
