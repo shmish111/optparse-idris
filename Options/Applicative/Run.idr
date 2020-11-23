@@ -51,7 +51,7 @@ stepParser p arg = case (parseWord arg) of
       True  => do
         args <- lift $ ST (\x => pure (x, x))
         let poppedArgs  = maybe [] (\w => ("-" <+> w) :: Nil) wordVal <+> args
-        lift $ ST (\y => pure ((), poppedArgs))
+        lift $ ST (\y => pure ([], poppedArgs))
         lift . lift . Right . pure $ a
       False => empty
     Opt _ (OptionReader w' fa _) => case elem w w' of
@@ -60,7 +60,7 @@ stepParser p arg = case (parseWord arg) of
         let argsWord = maybe [] (:: Nil) wordVal <+> args
         case argsWord of
           (a :: rest) => do
-            lift $ ST (\y => pure ((), rest))
+            lift $ ST (\y => pure ([], rest))
             lift . lift . map pure $ fa a
           _ => lift $ lift (Left $ ErrorMsg "Input required after option ")
       False => empty
@@ -86,9 +86,9 @@ public export
 runParser : {a : Type} -> Parser a -> List String -> Either ParseError (a, List String)
 runParser p Nil = maybeToEither (ErrorMsg "Not enough input") $ map (\p' => (p', Nil)) (evalParser p)
 runParser p args@(arg :: argt) = do
-  x <- runStateT (runMaybeT $ stepParser p arg) argt
+  x <- runStateT argt (runMaybeT $ stepParser p arg)
   case x of
-    (Just p', args') => runParser p' args'
+    (args', Just p') => runParser p' args'
     _                => maybeToEither (parseError arg) $ map (\x' => (x', args)) (evalParser p)
 
 public export

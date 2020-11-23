@@ -16,11 +16,6 @@ import Control.Lens
 import Control.Monad.State
 import Control.Monad.Trans
 
-catMaybes : List (Maybe a) -> List a
-catMaybes [] = []
-catMaybes (Nothing :: xs) = catMaybes xs
-catMaybes (Just a :: xs) = a :: catMaybes xs
-
 public export
 data OptTree : a -> Type where
   Leaf     : a                -> OptTree a
