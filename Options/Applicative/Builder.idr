@@ -78,7 +78,7 @@ long : HasName d => String -> d -> d
 long c = over names (\ns => LongName c :: ns)
 
 public export
-interface HasSubCommands (d : Type ) a where
+interface HasSubCommands (0 d : Type ) a where
   cmds : { f : Type -> Type } -> Functor f => LensLike' f d (List (String, (Parser a)))
 
 public export
@@ -132,7 +132,7 @@ internal : HasVisibility d => d -> d
 internal d = d |> visibility .~ Internal
 
 public export
-interface HasValue ( d : Type -> Type ) where
+interface HasValue ( 0 d : Type -> Type ) where
   value : { a : Type } -> { b : Type } -> { f : Type -> Type } -> Functor f => LensLike f (d a) (d b) a b
 
 public export
